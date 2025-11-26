@@ -1,4 +1,4 @@
-#****Cómo compilar y ejecutar****
+#****🛠Cómo compilar y ejecutar****
 
 Para compilar el código en C++ se sugiere utilizar g++ con soporte para C++11 o versiones posteriores:
 
@@ -14,7 +14,7 @@ Para correr la simulación:
 
 La simulación tiene una duración de 10 segundos y al finalizar indica cuántas veces comió cada filósofo.
 
-Herramientas de sincronización
+#****🧩Herramientas de sincronización****
 
 > std::mutex
 
