@@ -1,94 +1,44 @@
-# 🧩 Problema de los Filósofos Comensales  
-## Implementación en C++ con Threads y Mutex
+#****Cómo compilar y ejecutar****
 
-## 📌 Descripción
-Este programa simula el problema clásico de concurrencia conocido como **Los Filósofos Comensales**, utilizando:
+Para compilar el código en C++ se sugiere utilizar g++ con soporte para C++11 o versiones posteriores:
 
-- Hilos (`std::thread`)
-- Mutex para exclusión mutua
-- Impresión sincronizada con `lock_guard`
-- Estrategia para evitar *deadlock*
+> g++ -std=c++11 filosofos. cpp -o filosofos -pthread
 
----
+- std=c++11: habilita las funciones avanzadas de C++ (hilos y mutex).
 
-# 🧠 Código completo
+- pthread: permite el uso de hilos en sistemas Linux/Unix.
 
-```cpp
-#include <iostream>
-#include <thread>
-#include <mutex>
-#include <chrono>
-using namespace std;
+Para correr la simulación:
 
-const int N = 5;
-mutex tenedor[N];
-mutex pantalla;        // para imprimir ordenado
-bool correr = true;    // controla el tiempo de la simulación
-int comidas[N] = {0};
+### ./filosofos
 
-void filosofo(int id)
-{
-    int izq = id;
-    int der = (id + 1) % N;
+La simulación tiene una duración de 10 segundos y al finalizar indica cuántas veces comió cada filósofo.
 
-    bool invertir = (id == N - 1); // el último invierte el orden
+Herramientas de sincronización
 
-    while (correr)
-    {
-        // Pensando
-        {
-            lock_guard<mutex> lock(pantalla);
-            cout << "Filosofo " << id+1 << " esta pensando..." << endl;
-        }
-        this_thread::sleep_for(chrono::milliseconds(400));
+> std::mutex
 
-        {
-            lock_guard<mutex> lock(pantalla);
-            cout << "Filosofo " << id+1 << " quiere comer." << endl;
-        }
+Se encarga de proteger los recursos compartidos para evitar el acceso simultáneo de múltiples hilos.
 
-        // Tomar tenedores
-        if (!invertir)
-        {
-            tenedor[izq].lock();
-            tenedor[der].lock();
-        }
-        else
-        {
-            tenedor[der].lock();
-            tenedor[izq].lock();
-        }
+En este programa:
 
-        // Comiendo
-        {
-            lock_guard<mutex> lock(pantalla);
-            cout << "Filosofo " << id+1 << " esta comiendo..." << endl;
-        }
-        comidas[id]++;
-        this_thread::sleep_for(chrono::milliseconds(500));
+> > tenedor[N]: mutex correspondiente a cada tenedor de los filósofos.
 
-        // Soltar tenedores
-        tenedor[izq].unlock();
-        tenedor[der].unlock();
-    }
-}
+> > pantalla: mutex que asegura que los mensajes se impriman de manera ordenada.
 
-int main()
-{
-    thread hilos[N];
+luego esta : 
 
-    for (int i = 0; i < N; i++)
-        hilos[i] = thread(filosofo, i);
+> -lock_guard
 
-    this_thread::sleep_for(chrono::seconds(10));
-    correr = false;
+Automáticamente bloquea un mutex al iniciar un bloque y lo libera al finalizar.
 
-    for (int i = 0; i < N; i++)
-        hilos[i].join();
+Se aplica para asegurar que los mensajes se muestren de forma organizada en la consola.
 
-    cout << "\n===== RESULTADOS =====\n";
-    for (int i = 0; i < N; i++)
-        cout << "Filosofo " << i+1 << " comio " << comidas[i] << " veces.\n";
+#****Estrategias de concurrencia****
+Prevención de deadlock
 
-    return 0;
-}
+- Los filósofos del 1 al N-1: primero toman el tenedor de la izquierda y luego el de la derecha.
+
+- El filósofo N: invierte el orden, tomando primero el tenedor derecho y luego el izquierdo.
+
+Esta lógica interrumpe el ciclo de espera circular y previene que todos los filósofos queden atrapados.
