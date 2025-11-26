@@ -1,44 +1,62 @@
-#****🛠Cómo compilar y ejecutar****
+#🛠️ Cómo compilar y ejecutar el programa
 
-Para compilar el código en C++ se sugiere utilizar g++ con soporte para C++11 o versiones posteriores:
+Para ejecutar el programa principal filosofos.cpp:
 
-> g++ -std=c++11 filosofos. cpp -o filosofos -pthread
+- Se debe compilar el archivo usando un compilador de C++ compatible con C++11.
+- Se revisa que las lineas de comando no tenga errores para la ejecucio del programa .
 
-- std=c++11: habilita las funciones avanzadas de C++ (hilos y mutex).
+- Es necesario habilitar la librería de hilos (pthread) para que el programa funcione correctamente.
 
-- pthread: permite el uso de hilos en sistemas Linux/Unix.
+- Una vez compilado, se obtiene un ejecutable llamado filosofos, que al abrirse inicia la simulación de los filósofos durante el tiempo definido en el código (por ejemplo, 21 segundos).
 
-Para correr la simulación:
+- Al finalizar, el programa muestra en pantalla cuántas veces comió cada filósofo.
 
-### ./filosofos
+En resumen: primero se compila el archivo principal respetando el estándar C++11 y el soporte para hilos, y luego se ejecuta el resultado para ver la simulación y poder verificar si esta bien .
 
-La simulación tiene una duración de 10 segundos y al finalizar indica cuántas veces comió cada filósofo.
+#🧩Herramientas de sincronización utilizadas
 
-#****🧩Herramientas de sincronización****
+###1.  Uso de mutex para controlar el acceso a los tenedores
 
-> std::mutex
+En el programa se crean cinco mutex, uno por cada tenedor:
 
-Se encarga de proteger los recursos compartidos para evitar el acceso simultáneo de múltiples hilos.
+> mutex tenedor[N];
 
-En este programa:
 
-> > tenedor[N]: mutex correspondiente a cada tenedor de los filósofos.
+Cada filósofo debe bloquear (lock) un tenedor antes de usarlo y liberarlo (unlock) después de comer.
+Esto garantiza que ningún filósofo pueda usar el mismo tenedor al mismo tiempo, evitando condiciones de carrera y conflictos entre hilos.
 
-> > pantalla: mutex que asegura que los mensajes se impriman de manera ordenada.
+###b ) Mutex adicional para controlar la salida en pantalla
 
-luego esta : 
+Se utiliza un mutex para asegurar que los mensajes en la consola aparezcan ordenados:
 
-> -lock_guard
+> mutex pantalla;
 
-Automáticamente bloquea un mutex al iniciar un bloque y lo libera al finalizar.
 
-Se aplica para asegurar que los mensajes se muestren de forma organizada en la consola.
+Se aplica junto con lock_guard:
 
-#****Estrategias de concurrencia****
-Prevención de deadlock
+> lock_guard<mutex> lock(pantalla);
 
-- Los filósofos del 1 al N-1: primero toman el tenedor de la izquierda y luego el de la derecha.
 
-- El filósofo N: invierte el orden, tomando primero el tenedor derecho y luego el izquierdo.
+Esto permite que solo un hilo pueda imprimir en la consola a la vez, evitando que los mensajes se mezclen o aparezcan desordenados.
+###3. Estrategia para prevenir el deadlock: inversión del orden de toma de tenedores
 
-Esta lógica interrumpe el ciclo de espera circular y previene que todos los filósofos queden atrapados.
+El deadlock ocurre cuando todos los filósofos toman un tenedor y esperan eternamente por el otro.
+Para evitarlo, el programa implementa una estrategia clásica:
+
+> bool invertir = (id == N - 1);
+
+
+- Los filósofos 0 a 3 toman primero el tenedor izquierdo y luego el derecho.
+
+- El último filósofo (el número 4) toma primero el derecho y luego el izquierdo.
+
+- Esta inversión rompe la cadena circular que provoca deadlock, asegurando que al menos un filósofo siempre pueda avanzar.
+
+###4. Uso de sleep_for para permitir alternancia y evitar saturación
+
+El programa utiliza pausas controladas:
+
+> this_thread::sleep_for(chrono::milliseconds(...));
+
+
+Esto simula los tiempos de pensar y comer y evita que los hilos compitan de manera incesante por los recursos, permitiendo una ejecución más ordenada.
